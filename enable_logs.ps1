@@ -3,12 +3,13 @@
     1.2
 .AUTHOR
     bobby-tablez (Tim Peck)
+    lukas-holas
 .GUID
     a5d40ad0-297b-4269-80f9-934f6341367c
 .SYNOPSIS
     Enables detailed logging telemetry for a host. 
 .DESCRIPTION 
-     This module provides a large amount of logging telemetry. This includes Sysinternals Sysmon, PowerShell module and scriptblock logging, and audit policies for key event IDs. This script can be modified to suit organizational needs, however it should be tested first as it can generate a huge amount of log data depending on the host.
+    This module provides a large amount of logging telemetry. This includes Sysinternals Sysmon, PowerShell module and scriptblock logging, and audit policies for key event IDs. This script can be modified to suit organizational needs, however it should be tested first as it can generate a huge amount of log data depending on the host.
 .NOTES 
     Use at your own risk.
 .LINK 
@@ -247,9 +248,11 @@ If (-Not $sysmononly){
     $PSregValDat = 1
 
     If (-not (Test-Path $PSregPath)) {
-        New-Item -Path $PSregPath -ItemType Directory -Force  | Out-Null
+        New-Item -Path $PSregPath -ItemType Directory -Force
     }
-    Set-ItemProperty -Path $PSregPath -Name $PSregValName -Value $PSregValDat -Type DWord | Out-Null
+    Set-ItemProperty -Path $PSregPath -Name $PSregValName -Value $PSregValDat -Type DWord
+    Get-ItemProperty -Path $PSregPath -Name $PSregValName
+
     Write-Host "[ " -nonewline; Write-Host $cm -f green -nonewline; Write-Host " ] PowerShell Script Block Logging enabled"
 
     Write-Host "[ " -nonewline; Write-Host $cm -f green -nonewline; Write-Host " ] Enabling PowerShell module logging"
@@ -258,9 +261,19 @@ If (-Not $sysmononly){
     $PSMregValDat = 1
 
     If (-not (Test-Path $PSMregPath)) {
-        New-Item -Path $PSMregPath -ItemType Directory -Force  | Out-Null
+        New-Item -Path $PSMregPath -ItemType Directory -Force
     }
-    Set-ItemProperty -Path $PSMregPath -Name $PSMregValName -Value $PSMregValDat -Type DWord | Out-Null
+    Set-ItemProperty -Path $PSMregPath -Name $PSMregValName -Value $PSMregValDat -Type DWord
+    Get-ItemProperty -Path $PSMregPath -Name $PSMregValName
+
+
+    # Necessary for module logging to work
+    $PSMregPath = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\PowerShell\ModuleLogging\ModuleNames"
+    if (-not (Test-Path $PSMregPath)) {
+        New-Item -Path $PSMregPath -Force
+    }
+    Set-ItemProperty -Path $PSMregPath -Name "*" -Value "*"
+    Get-ItemProperty -Path $PSMregPath
 
     Write-Host "[ " -nonewline; Write-Host $cm -f green -nonewline; Write-Host " ] PowerShell Module Logging enabled"
 
@@ -291,9 +304,17 @@ If (-Not $sysmononly){
             New-Item -Path $cmdRegPath -ItemType Directory -Force
         }
         Set-ItemProperty -Path $cmdRegPath -Name $cmdRegValue -Value $cmdRegData -Type DWord
+        Get-ItemProperty -Path $cmdRegPath -Name $cmdRegValue
     }
 
     Write-Host "[ " -nonewline; Write-Host $cm -f green -nonewline; Write-Host " ] Configuring Audit Policies"
+
+    # Force audit policy subcategories
+    $RegistryPath = "HKLM:\SYSTEM\CurrentControlSet\Control\Lsa"
+    $ValueName = "SCENoApplyLegacyAuditPolicy"
+    $ValueData = 1
+    Set-ItemProperty -Path $RegistryPath -Name $ValueName -Value $ValueData
+    Get-ItemProperty -Path $RegistryPath -Name $ValueName
 
     # Policy settings
     $auditSettings = @{
@@ -318,6 +339,7 @@ If (-Not $sysmononly){
         "Process Creation" =                         @{ Success="enable"; Failure="enable" }
         "Process Termination" =                      @{ Success="enable"; Failure="enable" }
         "RPC Events" =                               @{ Success="enable"; Failure="enable" }
+        "Token Right Adjusted Events" =              @{ Success="enable"; Failure="enable" }
 
         # DS Access
         "Detailed Directory Service Replication" =   @{ Success="disable"; Failure="disable"}
@@ -334,9 +356,9 @@ If (-Not $sysmononly){
         "IPsec Quick Mode" =                         @{ Success="disable"; Failure="disable"}
         "Logoff" =                                   @{ Success="enable"; Failure="enable" }
         "Logon" =                                    @{ Success="enable"; Failure="enable" }
-        "Network Policy Server" =                    @{ Success="disable"; Failure="disable"}
+        "Network Policy Server" =                    @{ Success="enable"; Failure="enable"}
         "Other Logon/Logoff Events" =                @{ Success="enable"; Failure="enable" }
-        "Special Logon" =                            @{ Success="disable"; Failure="disable"}
+        "Special Logon" =                            @{ Success="enable"; Failure="enable"}
 
         # Object Access
         "Application Generated" =                    @{ Success="enable"; Failure="enable" }
@@ -349,8 +371,10 @@ If (-Not $sysmononly){
         "Handle Manipulation" =                      @{ Success="enable"; Failure="enable" }
         "Kernel Object" =                            @{ Success="enable"; Failure="enable" }
         "Other Object Access Events" =               @{ Success="enable"; Failure="enable"}
+        "Removable Storage" =                        @{ Success="enable"; Failure="enable" }
         "Registry" =                                 @{ Success="enable"; Failure="enable" }
-        "SAM" =                                      @{ Success="disable"; Failure="disable"}
+        "SAM" =                                      @{ Success="enable"; Failure="disable"}
+        "Central Policy Staging" =                   @{ Success="disable"; Failure="disable"}
 
         # Policy Change
         "Audit Policy Change" =                      @{ Success="enable"; Failure="enable" }
@@ -363,12 +387,12 @@ If (-Not $sysmononly){
         # Privilege Use
         "Non Sensitive Privilege Use" =              @{ Success="disable"; Failure="disable"}
         "Other Privilege Use Events" =               @{ Success="disable"; Failure="disable"}
-        "Sensitive Privilege Use" =                  @{ Success="disable"; Failure="disable"}
+        "Sensitive Privilege Use" =                  @{ Success="enable"; Failure="enable"}
 
         # System
-        "IPsec Driver" =                             @{ Success="disable"; Failure="disable"}
-        "Other System Events" =                      @{ Success="disable"; Failure="disable"}
-        "Security State Change" =                    @{ Success="disable"; Failure="disable"}
+        "IPsec Driver" =                             @{ Success="enable"; Failure="disable"}
+        "Other System Events" =                      @{ Success="disable"; Failure="enable"}
+        "Security State Change" =                    @{ Success="enable"; Failure="enable"}
         "Security System Extension" =                @{ Success="enable"; Failure="enable" }
         "System Integrity" =                         @{ Success="enable"; Failure="enable" }
     }
@@ -378,17 +402,15 @@ If (-Not $sysmononly){
         $settings = $auditSettings[$policy]
         ApplyPolicy -subcategory $policy -success $settings.Success -failure $settings.Failure
     }
+
+    Invoke-Expression -Command 'auditpol /get /category:*'
+
     Write-Host "[ " -nonewline; Write-Host $cm -f green -nonewline; Write-Host " ] Audit Policies Configured"
 
     # Enable command line w/ Process Creation
     Write-Host "[ " -nonewline; Write-Host $cm -f green -nonewline; Write-Host " ] Enabling command line logging w/ EVID: 4688"
     ProcStartCMD
     Write-Host "[ " -nonewline; Write-Host $cm -f green -nonewline; Write-Host " ] Event ID 4688 enabled with commandline"
-    
-    # Upate GPOs using gpupdate
-    Write-Host "[ " -nonewline; Write-Host $cm -f green -nonewline; Write-Host " ] Updating GPOs using gpupdate"
-    Invoke-Expression -Command "gpupdate /force" | Out-Null
-
 }
 
 # Clean Up

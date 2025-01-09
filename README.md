@@ -1,5 +1,5 @@
 # Enable All The Logs!
-![enable_all_the_logs_banner](https://raw.githubusercontent.com/bobby-tablez/Enable-All-The-Logs/main/enable_all_the_logs.png?raw=true) 
+![enable_all_the_logs_banner](https://raw.githubusercontent.com/lukas-holas/Enable-All-The-Logs/main/enable_all_the_logs.png?raw=true)
 This script automates enhancing logging telemetry on Windows hosts. It is designed specifically with threat detection in mind where logging is critical for detections in SIEM environments or in a lab setting for emulation, validation or for malware analysis. This can be used in production, however you may want to fork or clone the script to tune the GPO edits as needed as it will increase log volume significantly. 
 
 Tested on Windows Server 2019/2022 and Windows 10/11
@@ -10,10 +10,11 @@ This script performs the following actions:
 * Installs Sysmon (reinstalls if already present)
 * Enables PowerShell script block logging (EVID 4104)
 * Enables PowerShell module logging (EVID 4103)
-* Enables event ID 4688
 * Enables command line logging into Process Start events (EVID 4688)
-* Enables GPO audit policies based on https://www.ultimatewindowssecurity.com/wiki/page.aspx?spid=RecBaselineAudPol
-* Updates GPOs
+* Enables “Audit: Force audit policy subcategory settings”
+* Configures Advanced Audit Policy based on:
+    * https://www.ultimatewindowssecurity.com/wiki/page.aspx?spid=RecBaselineAudPol
+    * https://www.malwarearchaeology.com/cheat-sheets
 * Cleans up temporary downloaded files
 
 ### Usage
@@ -30,9 +31,9 @@ The ` -name` argument renames the Sysmon binary prior to installation. This effe
 
 ### Execute via PowerShell:
 ```powershell
-irm https://raw.githubusercontent.com/bobby-tablez/Enable-All-The-Logs/main/enable_logs.ps1|iex
+irm https://raw.githubusercontent.com/lukas-holas/Enable-All-The-Logs/main/enable_logs.ps1|iex
 ```
-![enable_all_the_logs_run](https://raw.githubusercontent.com/bobby-tablez/Enable-All-The-Logs/main/enable_all_the_logs_run_2.png?raw=true) 
+![enable_all_the_logs_run](https://raw.githubusercontent.com/lukas-holas/Enable-All-The-Logs/main/enable_all_the_logs_run_2.png?raw=true)
 
 ### Script to check for Sysmon install. Deploy it if not present:
 ```powershell
@@ -43,7 +44,7 @@ if ($sysmonProc) {
     Write-Host "Sysmon is already installed! Quitting..."
     Start-Sleep -Seconds 2
 } else {
-    $Url = "https://raw.githubusercontent.com/bobby-tablez/Enable-All-The-Logs/main/enable_logs.ps1"
+    $Url = "https://raw.githubusercontent.com/lukas-holas/Enable-All-The-Logs/main/enable_logs.ps1"
     $script = "$env:TMP\enable_logs.ps1"
     
     Invoke-WebRequest -Uri $Url -OutFile $script -UseBasicParsing
