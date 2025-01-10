@@ -125,7 +125,7 @@ Function ValidateDriverName {
         return
     }
     If ($driver.Length -gt 8) {
-        Write-Host "[ " -nonewline; Write-Host $ex -f red -nonewline; Write-Host "Error: Driver string must be 8 characters or less."
+        Write-Host "[ " -nonewline; Write-Host $ex -f red -nonewline; Write-Host " ] Error: Driver string must be 8 characters or less."
         exit 1
     }
     $driver = "-d $driver"
@@ -134,10 +134,10 @@ Function ValidateDriverName {
 Function DownloadSysmon {
     Try { 
         Invoke-WebRequest -URI $sysmonURL -OutFile $sysmonOut
-        Write-Host "[ " -nonewline; Write-Host $cm -f green -nonewline; Write-Host " Sysmon downloaded"
+        Write-Host "[ " -nonewline; Write-Host $cm -f green -nonewline; Write-Host " ] Sysmon downloaded"
     } Catch {
         $errorSysmon = $_.Exception.Message
-        Write-Host "[ " -nonewline; Write-Host $ex -f red -nonewline; Write-Host " Error occurred while downloading Sysmon: $errorSysmon"
+        Write-Host "[ " -nonewline; Write-Host $ex -f red -nonewline; Write-Host " ] Error occurred while downloading Sysmon: $errorSysmon"
         exit 1
     }
 }
